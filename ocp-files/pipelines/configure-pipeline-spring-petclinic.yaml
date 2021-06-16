@@ -1,0 +1,164 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  labels:
+    app.kubernetes.io/instance: spring-petclinic
+    pipeline.openshift.io/runtime: java
+    pipeline.openshift.io/type: kubernetes
+  name: spring-petclinic
+spec:
+  params:
+  - default: spring-petclinic
+    name: APP_NAME
+    type: string
+  - default: https://github.com/YOUR_REPO/spring-petclinic
+    name: GIT_REPO
+    type: string
+  - default: main
+    name: GIT_REVISION
+    type: string
+  - default: image-registry.openshift-image-registry.svc:5000/YOUR_PROJECT/spring-petclinic
+    name: IMAGE_NAME
+    type: string
+  - default: .
+    name: PATH_CONTEXT
+    type: string
+  - default: This is a manual build (not triggered by Git)
+    description: Git commit message if triggered by Git, otherwise it's a manual build
+    name: GIT_MESSAGE
+    type: string
+  - default: manual
+    description: SHA of Git commit if triggered by Git, otherwise just update manual
+      tag
+    name: COMMIT_SHA
+    type: string
+  tasks:
+  - name: fetch-repository
+    params:
+    - name: url
+      value: $(params.GIT_REPO)
+    - name: revision
+      value: $(params.GIT_REVISION)
+    - name: deleteExisting
+      value: "true"
+    runAfter:
+    - cleanup-resources
+    taskRef:
+      kind: ClusterTask
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: workspace
+  - name: build
+    params:
+    - name: IMAGE
+      value: $(params.IMAGE_NAME)
+    - name: TLSVERIFY
+      value: "false"
+    - name: PATH_CONTEXT
+      value: $(params.PATH_CONTEXT)
+    runAfter:
+    - fetch-repository
+    - mysql-rollout-wait
+    taskRef:
+      kind: ClusterTask
+      name: s2i-java-11
+    workspaces:
+    - name: source
+      workspace: workspace
+  - name: deploy-dev
+    params:
+    - name: SCRIPT
+      value: echo "$(params.GIT_MESSAGE)" && oc $@
+    - name: ARGS
+      value:
+      - rollout
+      - status
+      - deploy/spring-petclinic-dev
+    runAfter:
+    - kustomize-dev
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+  - name: mysql-deploy
+    params:
+    - name: SCRIPT
+      value: oc process openshift//mysql-ephemeral -p MYSQL_USER=petclinic -p MYSQL_PASSWORD=petclinic
+        -p MYSQL_ROOT_PASSWORD=petclinic -p MYSQL_DATABASE=petclinic | oc apply -f
+        -
+    - name: ARGS
+      value:
+      - ""
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+  - name: mysql-rollout-wait
+    params:
+    - name: SCRIPT
+      value: oc $@
+    - name: ARGS
+      value:
+      - rollout
+      - status
+      - dc/mysql
+    runAfter:
+    - mysql-deploy
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+  - name: clean-image
+    params:
+    - name: IMAGE
+      value: $(params.IMAGE_NAME)-minimal:$(params.COMMIT_SHA)
+    - name: BUILDER_IMAGE
+      value: registry.redhat.io/rhel8/buildah@sha256:6a68ece207bc5fd8db2dd5cc2d0b53136236fb5178eb5b71eebe5d07a3c33d13
+    - name: STORAGE_DRIVER
+      value: vfs
+    - name: DOCKERFILE
+      value: ./final-Dockerfile
+    - name: CONTEXT
+      value: .
+    - name: TLSVERIFY
+      value: "false"
+    - name: FORMAT
+      value: oci
+    - name: BUILD_EXTRA_ARGS
+      value: --build-arg PETCLINIC_S2I_IMAGE=$(params.IMAGE_NAME)
+    runAfter:
+    - build
+    taskRef:
+      kind: ClusterTask
+      name: buildah
+    workspaces:
+    - name: source
+      workspace: workspace
+  - name: kustomize-dev
+    params:
+    - name: KUSTOMIZE_DIR
+      value: ocp-files
+    - name: EDIT_SUDBDIR
+      value: base
+    - name: RELEASE_SUBDIR
+      value: overlay/dev
+    - name: SCRIPT
+      value: kustomize edit set image spring-petclinic=$(params.IMAGE_NAME)-minimal:$(params.COMMIT_SHA)
+    runAfter:
+    - clean-image
+    taskRef:
+      kind: Task
+      name: kustomize
+    workspaces:
+    - name: source
+      workspace: workspace
+  - name: cleanup-resources
+    params:
+    - name: SCRIPT
+      value: oc delete deployment,cm,svc,route -l app=$(params.APP_NAME) --ignore-not-found
+    - name: ARGS
+      value:
+      - ""
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+  workspaces:
+  - name: workspace
