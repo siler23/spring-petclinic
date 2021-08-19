@@ -13,20 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.samples.petclinic.vet;
-
-import javax.persistence.Entity;
-import javax.persistence.Table;
-
-import org.springframework.samples.petclinic.model.NamedEntity;
+package org.springframework.samples.petclinic.model;
 
 /**
- * Models a {@link Vet Vet's} specialty (for example, dentistry).
+ * Simple JavaBean domain object representing an person.
  *
- * @author Juergen Hoeller
+ * @author Ken Krebs
  */
-@Entity
-@Table(name = "specialties")
-public class Specialty extends NamedEntity {
+public class PersonDTO extends BaseDTO {
+
+	private String firstName;
+
+	private String lastName;
+
+	public String getFirstName() {
+		return this.firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public String getLastName() {
+		return this.lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
 
 }

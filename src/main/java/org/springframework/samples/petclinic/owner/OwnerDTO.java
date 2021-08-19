@@ -21,18 +21,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.validation.constraints.Digits;
-import javax.validation.constraints.NotEmpty;
-
 import org.springframework.beans.support.MutableSortDefinition;
 import org.springframework.beans.support.PropertyComparator;
 import org.springframework.core.style.ToStringCreator;
-import org.springframework.samples.petclinic.model.Person;
+import org.springframework.samples.petclinic.model.PersonDTO;
 
 /**
  * Simple JavaBean domain object representing an owner.
@@ -42,24 +34,14 @@ import org.springframework.samples.petclinic.model.Person;
  * @author Sam Brannen
  * @author Michael Isvy
  */
-@Entity
-@Table(name = "owners")
-public class Owner extends Person {
+public class OwnerDTO extends PersonDTO {
 
-	@Column(name = "address")
-	@NotEmpty
 	private String address;
 
-	@Column(name = "city")
-	@NotEmpty
 	private String city;
 
-	@Column(name = "telephone")
-	@NotEmpty
-	@Digits(fraction = 0, integer = 10)
 	private String telephone;
 
-	@OneToMany(cascade = CascadeType.ALL, mappedBy = "owner")
 	private Set<Pet> pets;
 
 	public String getAddress() {
@@ -101,13 +83,6 @@ public class Owner extends Person {
 		List<Pet> sortedPets = new ArrayList<>(getPetsInternal());
 		PropertyComparator.sort(sortedPets, new MutableSortDefinition("name", true, true));
 		return Collections.unmodifiableList(sortedPets);
-	}
-
-	public void addPet(Pet pet) {
-		if (pet.isNew()) {
-			getPetsInternal().add(pet);
-		}
-		pet.setOwner(this);
 	}
 
 	/**

@@ -26,6 +26,8 @@
     <webjars-jquery-ui.version>1.11.4</webjars-jquery-ui.version>
     <webjars-jquery.version>2.2.4</webjars-jquery.version>
     <wro4j.version>1.8.0</wro4j.version>
+    <modelmapper.version>2.4.4</modelmapper.version>
+    <log4j.version>2.14.1</log4j.version>
 
     <jacoco.version>0.8.5</jacoco.version>
     <nohttp-checkstyle.version>0.0.4.RELEASE</nohttp-checkstyle.version>
@@ -131,6 +133,31 @@
       <artifactId>spring-boot-devtools</artifactId>
       <optional>true</optional>
     </dependency>
+
+    <!--- Map Persistent Entity to DTO -->
+    <dependency>
+      <groupId>org.modelmapper</groupId>
+      <artifactId>modelmapper</artifactId>
+      <version>${modelmapper.version}</version>
+    </dependency>
+
+    <!--- Logging Dependency -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -251,6 +278,7 @@
         <version>${wro4j.version}</version>
         <executions>
           <execution>
+            <?m2e execute onConfiguration?>
             <phase>generate-resources</phase>
             <goals>
               <goal>run</goal>

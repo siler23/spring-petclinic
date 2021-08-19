@@ -18,6 +18,8 @@ package org.springframework.samples.petclinic;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.modelmapper.ModelMapper;
 
 /**
  * PetClinic Spring Boot Application.
@@ -30,6 +32,11 @@ public class PetClinicApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(PetClinicApplication.class, args);
+	}
+
+	@Bean
+	public ModelMapper modelMapper() {
+		return new ModelMapper();
 	}
 
 }

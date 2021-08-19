@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.samples.petclinic.vet;
-
-import javax.persistence.Entity;
-import javax.persistence.Table;
-
-import org.springframework.samples.petclinic.model.NamedEntity;
+package org.springframework.samples.petclinic.model;
 
 /**
- * Models a {@link Vet Vet's} specialty (for example, dentistry).
+ * Simple JavaBean domain object with an id property. Used as a base class for objects
+ * needing this property.
  *
- * @author Juergen Hoeller
+ * @author Garrett
  */
-@Entity
-@Table(name = "specialties")
-public class Specialty extends NamedEntity {
+public class BaseDTO {
+
+	private Integer id;
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public boolean isNew() {
+		return this.id == null;
+	}
 
 }

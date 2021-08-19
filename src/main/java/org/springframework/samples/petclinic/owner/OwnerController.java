@@ -27,9 +27,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.validation.Valid;
 import java.util.Collection;
 import java.util.Map;
+
+import org.modelmapper.ModelMapper;
 
 /**
  * @author Juergen Hoeller
@@ -46,7 +51,12 @@ class OwnerController {
 	@Autowired
 	private OwnerRepository owners;
 
+	@Autowired
+	private ModelMapper modelMapper;
+
 	private VisitRepository visits;
+
+	private final Logger logger = LoggerFactory.getLogger(OwnerController.class);
 
 	public OwnerController(VisitRepository visits) {
 		this.visits = visits;
@@ -62,16 +72,18 @@ class OwnerController {
 		Owner owner = new Owner();
 		model.put("owner", owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
+
 	}
 
 	@PostMapping("/owners/new")
-	public String processCreationForm(@Valid Owner owner, BindingResult result) {
+	public String processCreationForm(@Valid OwnerDTO ownerDTO, BindingResult result) {
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 		else {
+			Owner owner = convertToEntity(ownerDTO);
 			this.owners.save(owner);
-			return "redirect:/owners/" + owner.getId();
+			return "redirect:/owners/" + ownerDTO.getId();
 		}
 	}
 
@@ -82,10 +94,11 @@ class OwnerController {
 	}
 
 	@GetMapping("/owners")
-	public String processFindForm(Owner owner, BindingResult result, Map<String, Object> model) {
+	public String processFindForm(OwnerDTO ownerDTO, BindingResult result, Map<String, Object> model) {
 
-		System.out.println("Searching for " + owner.getLastName().trim());
+		Owner owner = convertToEntity(ownerDTO);
 
+		logger.info("Searching for " + owner.getLastName().trim());
 		// find owners by last name
 		Collection<Owner> results = this.owners.findByLastName(owner.getLastName());
 		if (results.isEmpty()) {
@@ -113,12 +126,13 @@ class OwnerController {
 	}
 
 	@PostMapping("/owners/{ownerId}/edit")
-	public String processUpdateOwnerForm(@Valid Owner owner, BindingResult result,
+	public String processUpdateOwnerForm(@Valid OwnerDTO ownerDTO, BindingResult result,
 			@PathVariable("ownerId") int ownerId) {
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 		else {
+			Owner owner = convertToEntity(ownerDTO);
 			owner.setId(ownerId);
 			this.owners.save(owner);
 			return "redirect:/owners/{ownerId}";
@@ -140,5 +154,24 @@ class OwnerController {
 		mav.addObject(owner);
 		return mav;
 	}
+
+	private Owner convertToEntity(OwnerDTO ownerDTO) {
+
+		logger.info("DTO Object = {} ", ownerDTO);
+
+		Owner owner = modelMapper.map(ownerDTO, Owner.class);
+
+		return owner;
+	}
+
+	/*
+	 * private OwnerDTO convertToDTO (Owner owner) {
+	 *
+	 * logger.info("Entity Object = {} ", owner);
+	 *
+	 * OwnerDTO ownerDTO = modelMapper.map(owner, OwnerDTO.class);
+	 *
+	 * return ownerDTO; }
+	 */
 
 }

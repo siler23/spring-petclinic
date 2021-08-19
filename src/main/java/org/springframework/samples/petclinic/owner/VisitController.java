@@ -20,6 +20,7 @@ import java.util.Map;
 import javax.validation.Valid;
 
 import org.springframework.samples.petclinic.visit.Visit;
+import org.springframework.samples.petclinic.visit.VisitDTO;
 import org.springframework.samples.petclinic.visit.VisitRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -29,6 +30,13 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.modelmapper.ModelMapper;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Juergen Hoeller
@@ -43,6 +51,11 @@ class VisitController {
 	private final VisitRepository visits;
 
 	private final PetRepository pets;
+
+	@Autowired
+	private ModelMapper modelMapper;
+
+	private final Logger logger = LoggerFactory.getLogger(VisitController.class);
 
 	public VisitController(VisitRepository visits, PetRepository pets) {
 		this.visits = visits;
@@ -79,14 +92,34 @@ class VisitController {
 
 	// Spring MVC calls method loadPetWithVisit(...) before processNewVisitForm is called
 	@PostMapping("/owners/{ownerId}/pets/{petId}/visits/new")
-	public String processNewVisitForm(@Valid Visit visit, BindingResult result) {
+	public String processNewVisitForm(@Valid VisitDTO visitDTO, BindingResult result) {
 		if (result.hasErrors()) {
 			return "pets/createOrUpdateVisitForm";
 		}
 		else {
+			Visit visit = convertToEntity(visitDTO);
 			this.visits.save(visit);
 			return "redirect:/owners/{ownerId}";
 		}
 	}
+
+	private Visit convertToEntity(VisitDTO visitDTO) {
+
+		logger.info("DTO Object = {} ", visitDTO);
+
+		Visit visit = modelMapper.map(visitDTO, Visit.class);
+
+		return visit;
+	}
+
+	/*
+	 * private VisitDTO convertToDTO (Visit visit) {
+	 *
+	 * logger.info("Entity Object = {} ", visit);
+	 *
+	 * VisitDTO visitDTO = modelMapper.map(visit, VisitDTO.class);
+	 *
+	 * return visitDTO; }
+	 */
 
 }

@@ -15,6 +15,7 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
@@ -22,8 +23,13 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.validation.Valid;
 import java.util.Collection;
+
+import org.modelmapper.ModelMapper;
 
 /**
  * @author Juergen Hoeller
@@ -39,6 +45,11 @@ class PetController {
 	private final PetRepository pets;
 
 	private final OwnerRepository owners;
+
+	private final Logger logger = LoggerFactory.getLogger(PetController.class);
+
+	@Autowired
+	private ModelMapper modelMapper;
 
 	public PetController(PetRepository pets, OwnerRepository owners) {
 		this.pets = pets;
@@ -66,7 +77,8 @@ class PetController {
 	}
 
 	@GetMapping("/pets/new")
-	public String initCreationForm(Owner owner, ModelMap model) {
+	public String initCreationForm(OwnerDTO ownerDTO, ModelMap model) {
+		Owner owner = convertToEntityOwner(ownerDTO);
 		Pet pet = new Pet();
 		owner.addPet(pet);
 		model.put("pet", pet);
@@ -74,7 +86,9 @@ class PetController {
 	}
 
 	@PostMapping("/pets/new")
-	public String processCreationForm(Owner owner, @Valid Pet pet, BindingResult result, ModelMap model) {
+	public String processCreationForm(OwnerDTO ownerDTO, @Valid PetDTO petDTO, BindingResult result, ModelMap model) {
+		Owner owner = convertToEntityOwner(ownerDTO);
+		Pet pet = convertToEntityPet(petDTO);
 		if (StringUtils.hasLength(pet.getName()) && pet.isNew() && owner.getPet(pet.getName(), true) != null) {
 			result.rejectValue("name", "duplicate", "already exists");
 		}
@@ -97,7 +111,9 @@ class PetController {
 	}
 
 	@PostMapping("/pets/{petId}/edit")
-	public String processUpdateForm(@Valid Pet pet, BindingResult result, Owner owner, ModelMap model) {
+	public String processUpdateForm(@Valid PetDTO petDTO, BindingResult result, OwnerDTO ownerDTO, ModelMap model) {
+		Owner owner = convertToEntityOwner(ownerDTO);
+		Pet pet = convertToEntityPet(petDTO);
 		if (result.hasErrors()) {
 			pet.setOwner(owner);
 			model.put("pet", pet);
@@ -109,5 +125,43 @@ class PetController {
 			return "redirect:/owners/{ownerId}";
 		}
 	}
+
+	private Owner convertToEntityOwner(OwnerDTO ownerDTO) {
+
+		logger.info("DTO Object = {} ", ownerDTO);
+
+		Owner owner = modelMapper.map(ownerDTO, Owner.class);
+
+		return owner;
+	}
+
+	/*
+	 * private OwnerDTO convertToDTOOwner (Owner owner) {
+	 *
+	 * logger.info("Entity Object = {} ", owner);
+	 *
+	 * OwnerDTO ownerDTO = modelMapper.map(owner, OwnerDTO.class);
+	 *
+	 * return ownerDTO; }
+	 */
+
+	private Pet convertToEntityPet(PetDTO petDTO) {
+
+		logger.info("DTO Object = {} ", petDTO);
+
+		Pet pet = modelMapper.map(petDTO, Pet.class);
+
+		return pet;
+	}
+
+	/*
+	 * private PetDTO convertToDTOPet (Pet pet) {
+	 *
+	 * logger.info("Entity Object = {} ", pet);
+	 *
+	 * PetDTO petDTO = modelMapper.map(pet, PetDTO.class);
+	 *
+	 * return petDTO; }
+	 */
 
 }
