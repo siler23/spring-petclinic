@@ -21,6 +21,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.validation.constraints.Digits;
+import javax.validation.constraints.NotEmpty;
+
 import org.springframework.beans.support.MutableSortDefinition;
 import org.springframework.beans.support.PropertyComparator;
 import org.springframework.core.style.ToStringCreator;
@@ -36,13 +39,17 @@ import org.springframework.samples.petclinic.model.PersonDTO;
  */
 public class OwnerDTO extends PersonDTO {
 
+	@NotEmpty
 	private String address;
 
+	@NotEmpty
 	private String city;
 
+	@NotEmpty
+	@Digits(fraction = 0, integer = 10)
 	private String telephone;
 
-	private Set<Pet> pets;
+	private Set<PetDTO> pets;
 
 	public String getAddress() {
 		return this.address;
@@ -68,21 +75,33 @@ public class OwnerDTO extends PersonDTO {
 		this.telephone = telephone;
 	}
 
-	protected Set<Pet> getPetsInternal() {
+	public void movePet(PetDTO pet) {
+		getPetsInternal().add(pet);
+		pet.setOwner(this);
+	}
+
+	protected Set<PetDTO> getPetsInternal() {
 		if (this.pets == null) {
 			this.pets = new HashSet<>();
 		}
 		return this.pets;
 	}
 
-	protected void setPetsInternal(Set<Pet> pets) {
+	protected void setPetsInternal(Set<PetDTO> pets) {
 		this.pets = pets;
 	}
 
-	public List<Pet> getPets() {
-		List<Pet> sortedPets = new ArrayList<>(getPetsInternal());
+	public List<PetDTO> getPets() {
+		List<PetDTO> sortedPets = new ArrayList<>(getPetsInternal());
 		PropertyComparator.sort(sortedPets, new MutableSortDefinition("name", true, true));
 		return Collections.unmodifiableList(sortedPets);
+	}
+
+	public void addPet(PetDTO pet) {
+		if (pet.isNew()) {
+			getPetsInternal().add(pet);
+		}
+		pet.setOwner(this);
 	}
 
 	/**
@@ -90,7 +109,7 @@ public class OwnerDTO extends PersonDTO {
 	 * @param name to test
 	 * @return true if pet name is already in use
 	 */
-	public Pet getPet(String name) {
+	public PetDTO getPet(String name) {
 		return getPet(name, false);
 	}
 
@@ -99,9 +118,20 @@ public class OwnerDTO extends PersonDTO {
 	 * @param name to test
 	 * @return true if pet name is already in use
 	 */
-	public Pet getPet(String name, boolean ignoreNew) {
+
+	/*
+	 * public Pet getPet(String name) { return getPet(name, false); }
+	 *
+	 * /** Return the Pet with the given name, or null if none found for this Owner.
+	 *
+	 * @param name to test
+	 *
+	 * @return true if pet name is already in use
+	 */
+
+	public PetDTO getPet(String name, boolean ignoreNew) {
 		name = name.toLowerCase();
-		for (Pet pet : getPetsInternal()) {
+		for (PetDTO pet : getPetsInternal()) {
 			if (!ignoreNew || !pet.isNew()) {
 				String compName = pet.getName();
 				compName = compName.toLowerCase();

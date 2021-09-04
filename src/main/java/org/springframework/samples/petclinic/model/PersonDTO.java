@@ -15,6 +15,8 @@
  */
 package org.springframework.samples.petclinic.model;
 
+import javax.validation.constraints.NotEmpty;
+
 /**
  * Simple JavaBean domain object representing an person.
  *
@@ -22,8 +24,10 @@ package org.springframework.samples.petclinic.model;
  */
 public class PersonDTO extends BaseDTO {
 
+	@NotEmpty
 	private String firstName;
 
+	@NotEmpty
 	private String lastName;
 
 	public String getFirstName() {

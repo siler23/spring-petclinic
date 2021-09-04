@@ -177,13 +177,13 @@ class OwnerControllerTests {
 				.andExpect(model().attribute("owner", hasProperty("city", is("Madison"))))
 				.andExpect(model().attribute("owner", hasProperty("telephone", is("6085551023"))))
 				.andExpect(model().attribute("owner", hasProperty("pets", not(empty()))))
-				.andExpect(model().attribute("owner", hasProperty("pets", new BaseMatcher<List<Pet>>() {
+				.andExpect(model().attribute("owner", hasProperty("pets", new BaseMatcher<List<PetDTO>>() {
 
 					@Override
 					public boolean matches(Object item) {
 						@SuppressWarnings("unchecked")
-						List<Pet> pets = (List<Pet>) item;
-						Pet pet = pets.get(0);
+						List<PetDTO> pets = (List<PetDTO>) item;
+						PetDTO pet = pets.get(0);
 						if (pet.getVisits().isEmpty()) {
 							return false;
 						}

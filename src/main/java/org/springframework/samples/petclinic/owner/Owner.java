@@ -110,6 +110,11 @@ public class Owner extends Person {
 		pet.setOwner(this);
 	}
 
+	public void movePet(Pet pet) {
+		getPetsInternal().add(pet);
+		pet.setOwner(this);
+	}
+
 	/**
 	 * Return the Pet with the given name, or null if none found for this Owner.
 	 * @param name to test

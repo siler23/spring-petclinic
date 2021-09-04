@@ -13,30 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.samples.petclinic.model;
+package org.springframework.samples.petclinic.owner;
 
-import java.io.Serializable;
+import org.springframework.samples.petclinic.model.NamedDTO;
 
 /**
- * Simple JavaBean domain object with an id property. Used as a base class for objects
- * needing this property.
- *
- * @author Garrett
+ * @author Juergen Hoeller Can be Cat, Dog, Hamster...
  */
-public class BaseDTO implements Serializable {
-
-	private Integer id;
-
-	public Integer getId() {
-		return id;
-	}
-
-	public void setId(Integer id) {
-		this.id = id;
-	}
-
-	public boolean isNew() {
-		return this.id == null;
-	}
+public class PetTypeDTO extends NamedDTO {
 
 }

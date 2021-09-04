@@ -28,7 +28,7 @@ import org.springframework.beans.support.MutableSortDefinition;
 import org.springframework.beans.support.PropertyComparator;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.samples.petclinic.model.NamedDTO;
-import org.springframework.samples.petclinic.visit.Visit;
+import org.springframework.samples.petclinic.visit.VisitDTO;
 
 /**
  * Simple business object representing a pet.
@@ -42,11 +42,11 @@ public class PetDTO extends NamedDTO {
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private LocalDate birthDate;
 
-	private PetType type;
+	private PetTypeDTO type;
 
-	private Owner owner;
+	private OwnerDTO owner;
 
-	private Set<Visit> visits = new LinkedHashSet<>();
+	private Set<VisitDTO> visits = new LinkedHashSet<>();
 
 	public void setBirthDate(LocalDate birthDate) {
 		this.birthDate = birthDate;
@@ -56,40 +56,40 @@ public class PetDTO extends NamedDTO {
 		return this.birthDate;
 	}
 
-	public PetType getType() {
+	public PetTypeDTO getType() {
 		return this.type;
 	}
 
-	public void setType(PetType type) {
+	public void setType(PetTypeDTO type) {
 		this.type = type;
 	}
 
-	public Owner getOwner() {
+	public OwnerDTO getOwner() {
 		return this.owner;
 	}
 
-	protected void setOwner(Owner owner) {
+	protected void setOwner(OwnerDTO owner) {
 		this.owner = owner;
 	}
 
-	protected Set<Visit> getVisitsInternal() {
+	protected Set<VisitDTO> getVisitsInternal() {
 		if (this.visits == null) {
 			this.visits = new HashSet<>();
 		}
 		return this.visits;
 	}
 
-	protected void setVisitsInternal(Collection<Visit> visits) {
+	protected void setVisitsInternal(Collection<VisitDTO> visits) {
 		this.visits = new LinkedHashSet<>(visits);
 	}
 
-	public List<Visit> getVisits() {
-		List<Visit> sortedVisits = new ArrayList<>(getVisitsInternal());
+	public List<VisitDTO> getVisits() {
+		List<VisitDTO> sortedVisits = new ArrayList<>(getVisitsInternal());
 		PropertyComparator.sort(sortedVisits, new MutableSortDefinition("date", false, false));
 		return Collections.unmodifiableList(sortedVisits);
 	}
 
-	public void addVisit(Visit visit) {
+	public void addVisit(VisitDTO visit) {
 		getVisitsInternal().add(visit);
 		visit.setPetId(this.getId());
 	}

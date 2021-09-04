@@ -20,6 +20,8 @@ import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.samples.petclinic.model.BaseDTO;
 
+import javax.validation.constraints.NotEmpty;
+
 /**
  * Simple JavaBean domain object representing a visit.
  *
@@ -31,6 +33,7 @@ public class VisitDTO extends BaseDTO {
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private LocalDate date;
 
+	@NotEmpty
 	private String description;
 
 	private Integer petId;
