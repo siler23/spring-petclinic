@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.samples.petclinic.visit.VisitDTO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +34,7 @@ import org.slf4j.LoggerFactory;
 import javax.validation.Valid;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 import java.util.Map;
-
-import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
 
 /**
  * @author Juergen Hoeller
@@ -56,24 +51,11 @@ class OwnerController {
 	@Autowired
 	private OwnerRepository owners;
 
-	@Autowired
-	private ModelMapper modelMapper = new ModelMapper();
-
-	PropertyMap<Pet, PetDTO> petDTOMap = new PropertyMap<Pet, PetDTO>() {
-		protected void configure() {
-			skip().setOwner(null);
-		}
-	};
-
-	PropertyMap<PetDTO, Pet> petMap = new PropertyMap<PetDTO, Pet>() {
-		protected void configure() {
-			skip().setOwner(null);
-		}
-	};
-
 	private VisitRepository visits;
 
 	private final Logger logger = LoggerFactory.getLogger(OwnerController.class);
+
+	private final DTOmapping mapper = new DTOmapping();
 
 	public OwnerController(VisitRepository visits) {
 		this.visits = visits;
@@ -94,7 +76,7 @@ class OwnerController {
 
 	@PostMapping("/owners/new")
 	public String processCreationForm(@Valid @ModelAttribute("owner") OwnerDTO ownerDTO, BindingResult result) {
-		Owner owner = convertOwnerToEntity(ownerDTO);
+		Owner owner = mapper.convertOwnerToEntity(ownerDTO);
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
@@ -114,10 +96,11 @@ class OwnerController {
 	public String processFindForm(@ModelAttribute("owner") OwnerDTO ownerDTO, BindingResult result,
 			Map<String, Object> model) {
 
-		Owner owner = convertOwnerToEntity(ownerDTO);
-		logger.info("Searching for " + owner.getLastName().trim());
+		Owner owner = mapper.convertOwnerToEntity(ownerDTO);
+		logger.info("Searching for ", owner.getLastName().trim());
 		// find owners by last name
-		Collection<OwnerDTO> results = convertCollectionToDTO(this.owners.findByLastName(owner.getLastName()));
+		Collection<OwnerDTO> results = mapper
+				.convertOwnerCollectionToDTO(this.owners.findByLastName(owner.getLastName()));
 		if (results.isEmpty()) {
 			// no owners found
 			result.rejectValue("lastName", "notFound", "not found");
@@ -137,7 +120,7 @@ class OwnerController {
 
 	@GetMapping("/owners/{ownerId}/edit")
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
-		OwnerDTO ownerDTO = convertOwnerToDTO(this.owners.findById(ownerId));
+		OwnerDTO ownerDTO = mapper.convertOwnerToDTO(this.owners.findById(ownerId));
 		model.addAttribute("owner", ownerDTO);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
@@ -145,14 +128,13 @@ class OwnerController {
 	@PostMapping("/owners/{ownerId}/edit")
 	public String processUpdateOwnerForm(@Valid @ModelAttribute("owner") OwnerDTO ownerDTO, BindingResult result,
 			@PathVariable("ownerId") int ownerId) {
-		Owner owner = convertOwnerToEntity(ownerDTO);
+		Owner owner = mapper.convertOwnerToEntity(ownerDTO);
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 		else {
 			owner.setId(ownerId);
 			this.owners.save(owner);
-			ownerDTO = convertOwnerToDTO(owner);
 			return "redirect:/owners/{ownerId}";
 		}
 	}
@@ -169,62 +151,9 @@ class OwnerController {
 		for (Pet pet : owner.getPets()) {
 			pet.setVisitsInternal(visits.findByPetId(pet.getId()));
 		}
-		OwnerDTO ownerDTO = convertOwnerToDTO(owner);
+		OwnerDTO ownerDTO = mapper.convertOwnerToDTO(owner);
 		mav.addObject("owner", ownerDTO);
 		return mav;
-	}
-
-	private Owner convertOwnerToEntity(OwnerDTO ownerDTO) {
-
-		logger.debug("DTO Object = {} ", ownerDTO);
-		logger.debug("Pets = {} ", ownerDTO.getPets());
-		Owner owner = modelMapper.map(ownerDTO, Owner.class);
-		ownerDTO.getPets().forEach(pet -> owner.movePet(modelMapper.map(pet, Pet.class)));
-		logger.debug("Entity Object = {} ", owner);
-		logger.debug("Pets = {} ", owner.getPets());
-
-		return owner;
-	}
-
-	private OwnerDTO convertOwnerToDTO(Owner owner) {
-
-		logger.debug("Entity Object = {} ", owner);
-		logger.debug("Pets = {} ", owner.getPets());
-		OwnerDTO ownerDTO = modelMapper.map(owner, OwnerDTO.class);
-		logger.debug("checking pets");
-		owner.getPets().forEach(pet -> logger.debug(pet.getName()));
-		owner.getPets().forEach(pet -> {
-			ownerDTO.movePet(convertToDTOPet(pet));
-		});
-		logger.debug("DTO Object = {} ", ownerDTO);
-		logger.debug("Pets = {} ", ownerDTO.getPets());
-		return ownerDTO;
-	}
-
-	private Collection<OwnerDTO> convertCollectionToDTO(Collection<Owner> ownerCollection) {
-		logger.debug("Converting Entity Owner Collection to DTO");
-		Collection<OwnerDTO> ownerCollectionDTO = ownerCollection.stream().map(owner -> convertOwnerToDTO(owner))
-				.collect(Collectors.toList());
-		logger.debug("returning DTO Collection of Owners");
-
-		return ownerCollectionDTO;
-	}
-
-	private PetDTO convertToDTOPet(Pet pet) {
-
-		logger.debug("Pet Entity Object = {} ", pet);
-		logger.debug(
-				"Pet Entity Visits = {} Pet Entity Name = {} Pet Entity Birth Date {} Pet Entity Type {} Pet Entity Owner {}",
-				pet.getVisits(), pet.getName(), pet.getBirthDate(), pet.getType(), pet.getOwner());
-		PetDTO petDTO = modelMapper.map(pet, PetDTO.class);
-		pet.getVisits().forEach(visit -> {
-			petDTO.addVisit(modelMapper.map(visit, VisitDTO.class));
-		});
-		logger.debug("Pet DTO Object = {} ", petDTO);
-		logger.debug("Pet DTO Visits = {} Pet DTO Name = {} Pet DTO Birth date {} Pet DTO Type {} PetDTO Owner {}",
-				petDTO.getVisits(), petDTO.getName(), petDTO.getBirthDate(), petDTO.getType(), petDTO.getOwner());
-		return petDTO;
-
 	}
 
 }

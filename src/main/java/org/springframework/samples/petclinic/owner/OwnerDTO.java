@@ -120,7 +120,6 @@ public class OwnerDTO extends PersonDTO {
 	 */
 
 	/*
-	 * public Pet getPet(String name) { return getPet(name, false); }
 	 *
 	 * /** Return the Pet with the given name, or null if none found for this Owner.
 	 *

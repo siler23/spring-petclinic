@@ -40,9 +40,9 @@ class VetController {
 	public String showVetList(Map<String, Object> model) {
 		// Here we are returning an object of type 'Vets' rather than a collection of Vet
 		// objects so it is simpler for Object-Xml mapping
-		Vets vets = new Vets();
-		vets.getVetList().addAll(this.vets.findAll());
-		model.put("vets", vets);
+		Vets vetslist = new Vets();
+		vetslist.getVetList().addAll(this.vets.findAll());
+		model.put("vets", vetslist);
 		return "vets/vetList";
 	}
 
@@ -50,9 +50,9 @@ class VetController {
 	public @ResponseBody Vets showResourcesVetList() {
 		// Here we are returning an object of type 'Vets' rather than a collection of Vet
 		// objects so it is simpler for JSon/Object mapping
-		Vets vets = new Vets();
-		vets.getVetList().addAll(this.vets.findAll());
-		return vets;
+		Vets vetslist = new Vets();
+		vetslist.getVetList().addAll(this.vets.findAll());
+		return vetslist;
 	}
 
 }
