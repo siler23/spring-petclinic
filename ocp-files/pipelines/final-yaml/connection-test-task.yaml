@@ -1,0 +1,89 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+    name: connection-test
+spec:
+    description: >-
+      "This task runs a bash script to determine if a given application
+      is accessible to the outside world via its route."
+    params:
+    - name: ROUTE_NAME
+      default: ""
+      description: "The name of the OpenShift route for the application."
+      type: string
+    - name: APP_PATH
+      default: "/"
+      description: "The path to reach the application from it's hostname"
+      type: string
+    - name: EXPECTED_STATUS
+      default: "200"
+      description: "The expected http(s) status code from querying the application."
+      type: string
+    - name: TIMEOUT
+      default: "30"
+      description: "The number of seconds to try before giving up on a successful connection."
+      type: string
+    - name: SECURE_CONNECTION
+      default: "true"
+      description: "true for a secure route (https), false for an insecure (http) route."
+      type: string
+    steps:
+      - name: route-connection-test
+        image: 'image-registry.openshift-image-registry.svc:5000/openshift/cli:latest'
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 200m
+            memory: 200Mi
+        script: |
+            #!/usr/bin/env bash
+            # Make parameters into variables for clarity
+            export route_name="$(params.ROUTE_NAME)"
+            export expected_status="$(params.EXPECTED_STATUS)"
+            export app_path="$(params.APP_PATH)"
+            export timeout="$(params.TIMEOUT)"
+            export secure_connection="$(params.SECURE_CONNECTION)"
+
+            # If true, http(s), if false (or otherwise) http
+            if [ "${secure_connection}" == "true" ]
+            then
+                export header="https://"
+                echo "Using secure https connection..."
+            else
+                export header="http://"
+                echo "Using insecure http connection..."
+            fi
+            # Start timer at 0
+            SECONDS=0
+            # Once timeout reached, stop retrying
+            while [ "${SECONDS}" -lt "${timeout}" ];
+            do
+                # Get hostname of route
+                hostname="$(oc get route ${route_name} -o jsonpath='{.spec.host}')"
+                # Get http(s) status of web page via external connection (route)
+                status=$(curl -s -o /dev/null -w "%{http_code}" "${header}${hostname}${app_path}")
+                # Print test completion message if expected status code received
+                if [ "${status}" -eq "${expected_status}" ]
+                then
+                    echo "---------------------------TESTS COMPLETE---------------------------"
+                    echo "Congratulations on a successful test!"
+                    echo "Please visit the application at:"
+                    echo
+                    echo "${header}${hostname}${app_path}"
+                    exit 0
+                # Print failure message if incorrect status code received + retry
+                else
+                    echo "The application is unexpectedly returning http(s) code ${status}..."
+                    echo "It is not available to outside traffic yet..."
+                    echo "Retrying in 5s at:"
+                    echo
+                    echo "${header}${hostname}${app_path}"
+                    sleep 5
+                fi
+            done
+            # Redirect output to standard error, print message, and exit with error after timeout
+            >&2 echo "Error, failed after ${timeout} seconds of trying..."
+            >&2 echo "The application was never accessible to the outside world :("
+            exit 1

@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kustomize
+spec:
+  description: >-
+    This task runs commands against the cluster where the task run is being
+    executed.
+
+    Kustomize is a tool for Kubernetes native configuration management.  It
+    introduces a template-free way to customize application configuration that
+    simplifies the use of off-the-shelf applications.  Now, built into kubectl
+    as apply -k and oc as oc apply -k.
+  params:
+  - default: ocp-files
+    description: The directory where the kustomization yaml file(s) reside in the git directory
+    name: KUSTOMIZE_DIR
+    type: string
+  - default: base
+    description: subdirectory of KUSTOMIZE_DIR used for extra configuration of current resources
+    name: EDIT_SUDBDIR
+    type: string
+  - default: overlay/dev
+    description: subdirectory of KUSTOMIZE_DIR used for specifying resources for a specific release such as dev or staging
+    name: RELEASE_SUBDIR
+    type: string
+  - default: kustomize --help
+    description: The Kustomize CLI command to run
+    name: SCRIPT
+    type: string
+  steps:
+  - image: 'quay.io/gmoney23/kustomize-s390x:v4.1.2'
+    name: kustomize
+    resources:
+      limits:
+        cpu: 200m
+        memory: 200Mi
+      requests:
+        cpu: 200m
+        memory: 200Mi
+    workingDir: "$(workspaces.source.path)/$(params.KUSTOMIZE_DIR)/$(params.EDIT_SUDBDIR)"
+    script: $(params.SCRIPT)
+  - image: 'image-registry.openshift-image-registry.svc:5000/openshift/cli:latest'
+    name: apply-oc-files
+    resources:
+      limits:
+        cpu: 200m
+        memory: 200Mi
+      requests:
+        cpu: 200m
+        memory: 200Mi
+    script: oc apply -k "$(workspaces.source.path)/$(params.KUSTOMIZE_DIR)/$(params.RELEASE_SUBDIR)"
+  workspaces:
+  - name: source
+    description: The git source code
