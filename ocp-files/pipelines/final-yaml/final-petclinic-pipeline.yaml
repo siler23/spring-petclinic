@@ -3,7 +3,9 @@ kind: Pipeline
 metadata:
   labels:
     app.kubernetes.io/instance: spring-petclinic
+    app.kubernetes.io/name: spring-petclinic
     pipeline.openshift.io/runtime: java
+    pipeline.openshift.io/runtime-version: openj9-11-el8
     pipeline.openshift.io/type: kubernetes
   name: spring-petclinic
 spec:
@@ -87,8 +89,6 @@ spec:
         -p MYSQL_ROOT_PASSWORD=petclinic -p MYSQL_DATABASE=petclinic | oc apply -f
         -
     - name: ARGS
-      value:
-      - ""
     taskRef:
       kind: ClusterTask
       name: openshift-client
@@ -155,8 +155,6 @@ spec:
     - name: SCRIPT
       value: oc delete deployment,cm,svc,route -l app=$(params.APP_NAME) --ignore-not-found
     - name: ARGS
-      value:
-      - ""
     taskRef:
       kind: ClusterTask
       name: openshift-client
@@ -182,8 +180,6 @@ spec:
     - name: SCRIPT
       value: oc delete deployment,cm,svc,route -l app=spring-petclinic,env=dev --ignore-not-found
     - name: ARGS
-      value:
-      - ""
     runAfter:
     - connect-dev
     taskRef:
@@ -212,8 +208,6 @@ spec:
     - name: SCRIPT
       value: echo "$(params.GIT_MESSAGE)" && oc rollout status deploy/spring-petclinic-staging
     - name: ARGS
-      value:
-      - ""
     runAfter:
     - kustomize-staging
     taskRef:
